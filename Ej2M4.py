@@ -1,8 +1,8 @@
 import streamlit as st
 from openai import OpenAI
+import json
 
-# ⚠️ Configura tu clave API personal
-
+# ⚠️ Configura tu clave API personal desde .streamlit/secrets.toml
 API_KEY = st.secrets["OPENROUTER_API_KEY"]
 
 # Inicializa el cliente de OpenAI vía OpenRouter
@@ -14,10 +14,14 @@ client = OpenAI(
 # Función para pedir análisis al modelo
 def analizar_sentimiento_openai(texto):
     prompt = f"""
-Analiza el siguiente texto en español y responde en formato JSON con:
-- sentimiento: "positivo", "negativo" o "neutral"
-- emoji: un solo emoji representativo
-- justificacion: una frase que explique por qué se clasificó así
+Analiza el siguiente texto en español y responde en formato JSON **sin ningún texto adicional ni bloques de código**, solo el JSON directamente.
+
+Formato esperado:
+{{
+  "sentimiento": "positivo" | "negativo" | "neutral",
+  "emoji": "😊",
+  "justificacion": "Una breve explicación del porqué de la clasificación."
+}}
 
 Texto:
 \"\"\"{texto}\"\"\"
@@ -34,16 +38,21 @@ Texto:
         },
     )
 
-    # Extraemos y evaluamos la respuesta como diccionario
-    import json
-    contenido = respuesta.choices[0].message.content
+    contenido = respuesta.choices[0].message.content.strip()
+
+    # Limpia delimitadores tipo ```json ... ```
+    if contenido.startswith("```"):
+        contenido = contenido.split("```")[1].strip()
+        if contenido.lower().startswith("json"):
+            contenido = "\n".join(contenido.split("\n")[1:]).strip()
+
     try:
         resultado = json.loads(contenido)
         return resultado
     except Exception as e:
         return {"error": f"No se pudo interpretar la respuesta: {e}\nRespuesta: {contenido}"}
 
-# ---- Streamlit UI ----
+# ---- Interfaz de usuario con Streamlit ----
 
 st.set_page_config(page_title="Análisis de Sentimiento (OpenAI)", page_icon="🧠")
 
