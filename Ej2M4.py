@@ -24,7 +24,7 @@ Texto:
     """
 
     respuesta = client.chat.completions.create(
-        model="qwen/qwen3-1.7b:free",
+        model="google/gemma-3-27b-it:free",
         messages=[
             {"role": "user", "content": prompt}
         ],
